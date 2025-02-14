@@ -2,7 +2,7 @@
   "name": "ais-map",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://your-username.github.io/ais-map",
+  "homepage": "https://FantmDragn.github.io/ais-map",
   "dependencies": {
     "axios": "^1.7.9",
     "cra-template": "1.2.0",

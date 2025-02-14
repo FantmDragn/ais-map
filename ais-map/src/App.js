@@ -1,28 +1,51 @@
 import React, { useEffect, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import axios from "axios";
 
 const mapStyle = { height: "100vh", width: "100%" };
-const AIS_API = "https://opensky-network.org/api/states/all";
+const AIS_STREAM_URL = "wss://stream.aisstream.io/v0/stream";
+const API_KEY = "379f727dd8ee90352708c468ba7c5604bba3566d"; // Replace with your actual key
 
 const Map = () => {
   const [ships, setShips] = useState([]);
 
   useEffect(() => {
-    const fetchAISData = async () => {
-      try {
-        const response = await axios.get(AIS_API);
-        const data = response.data.states;
-        setShips(data.slice(0, 50)); // Limit to 50 ships
-      } catch (error) {
-        console.error("Error fetching AIS data:", error);
+    const socket = new WebSocket(AIS_STREAM_URL);
+
+    socket.onopen = () => {
+      console.log("Connected to AISStream.io WebSocket");
+      // Send subscription message
+      const message = {
+        Apikey: API_KEY,
+        BoundingBoxes: [
+          [[-180, -90], [180, 90]] // Covers the whole world
+        ],
+        FilterMessageTypes: ["PositionReport"],
+      };
+      socket.send(JSON.stringify(message));
+    };
+
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data && data.messages) {
+        const shipsData = data.messages
+          .filter(ship => ship.latitude !== undefined && ship.longitude !== undefined)
+          .slice(0, 50); // Limit to 50 ships
+        setShips(shipsData);
       }
     };
 
-    fetchAISData();
-    const interval = setInterval(fetchAISData, 30000); // Refresh every 30 sec
-    return () => clearInterval(interval);
+    socket.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
+
+    socket.onclose = () => {
+      console.log("AISStream.io WebSocket closed");
+    };
+
+    return () => {
+      socket.close();
+    };
   }, []);
 
   return (
@@ -32,11 +55,11 @@ const Map = () => {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       />
       {ships.map((ship, index) => (
-        <Marker key={index} position={[ship[6], ship[5]]}>
+        <Marker key={index} position={[ship.latitude, ship.longitude]}>
           <Popup>
-            <b>Callsign:</b> {ship[1]}<br />
-            <b>Country:</b> {ship[2]}<br />
-            <b>Altitude:</b> {ship[7]}m
+            <b>MMSI:</b> {ship.mmsi}<br />
+            <b>Speed:</b> {ship.speedOverGround} knots<br />
+            <b>Course:</b> {ship.courseOverGround}°
           </Popup>
         </Marker>
       ))}
