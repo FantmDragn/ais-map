@@ -14,7 +14,7 @@ export default function handler(req, res) {
         
         aisStream.onopen = () => {
             aisStream.send(JSON.stringify({
-                Apikey: "YOUR_AISSTREAM_API_KEY", // Replace with your actual API key
+                Apikey: "379f727dd8ee90352708c468ba7c5604bba3566d", // Replace with your actual API key
                 BoundingBoxes: [[[-180, -90], [180, 90]]],
                 FilterMessageTypes: ["PositionReport"]
             }));
