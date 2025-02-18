@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const mapStyle = { height: "100vh", width: "100%" };
-const AIS_STREAM_URL = "wss://stream.aisstream.io/v0/stream";
+const AIS_STREAM_URL = "ais-map-fantmdragns-projects.vercel.app";
 const API_KEY = "379f727dd8ee90352708c468ba7c5604bba3566d"; // Replace with your actual key
 
 const Map = () => {
