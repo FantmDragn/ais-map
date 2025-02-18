@@ -1,38 +1,46 @@
-import { Server } from 'ws';
+import { WebSocketServer } from "ws";
 
 export default function handler(req, res) {
-    if (res.socket.server.websocket) {
-        res.end();
-        return;
-    }
+  if (!res.socket.server.wss) {
+    console.log("Starting WebSocket proxy...");
 
-    const wss = new Server({ server: res.socket.server });
-    res.socket.server.websocket = wss;
+    const wss = new WebSocketServer({ noServer: true });
 
-    wss.on('connection', (ws) => {
-        const aisStream = new WebSocket("wss://stream.aisstream.io/v0/stream");
-        
-        aisStream.onopen = () => {
-            aisStream.send(JSON.stringify({
-                Apikey: "379f727dd8ee90352708c468ba7c5604bba3566d", // Replace with your actual API key
-                BoundingBoxes: [[[-180, -90], [180, 90]]],
-                FilterMessageTypes: ["PositionReport"]
-            }));
-        };
+    wss.on("connection", (ws) => {
+      console.log("Client connected to WebSocket proxy.");
 
-        aisStream.onmessage = (message) => {
-            ws.send(message.data);
-        };
+      const aisStream = new WebSocket("wss://stream.aisstream.io/v0/stream");
 
-        aisStream.onerror = (error) => {
-            console.error("❌ AISStream Error:", error);
-            ws.close();
-        };
+      aisStream.onopen = () => {
+        console.log("✅ Connected to AISStream.io");
+        aisStream.send(
+          JSON.stringify({
+            Apikey: "YOUR_AISSTREAM_API_KEY", // Replace with your actual key
+            BoundingBoxes: [[[-180, -90], [180, 90]]],
+            FilterMessageTypes: ["PositionReport"],
+          })
+        );
+      };
 
-        aisStream.onclose = () => ws.close();
+      aisStream.onmessage = (message) => {
+        ws.send(message.data);
+      };
 
-        ws.on('close', () => aisStream.close());
+      aisStream.onerror = (error) => {
+        console.error("❌ AISStream.io WebSocket error:", error);
+        ws.close();
+      };
+
+      aisStream.onclose = () => ws.close();
+
+      ws.on("close", () => {
+        console.log("Client disconnected from proxy.");
+        aisStream.close();
+      });
     });
 
-    res.end();
+    res.socket.server.wss = wss;
+  }
+
+  res.end();
 }
