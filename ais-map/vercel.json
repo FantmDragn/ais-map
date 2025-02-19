@@ -1,15 +1,19 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/ais-proxy.js",
-      "use": "@vercel/node"
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs18.x"
     }
-  ],
+  },
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/ais-proxy.js"
+      "src": "/api/ais-proxy",
+      "dest": "/api/ais-proxy.js",
+      "methods": ["GET", "POST", "OPTIONS"],
+      "headers": {
+        "Connection": "Upgrade",
+        "Upgrade": "websocket"
+      }
     }
   ]
 }
