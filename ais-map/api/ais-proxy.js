@@ -1,17 +1,20 @@
 import { WebSocketServer } from "ws";
+import { createServer } from "http";
 
 export default function handler(req, res) {
-  if (req.headers.upgrade !== "websocket") {
-    res.status(400).json({ error: "Expected WebSocket connection" });
-    return;
-  }
-
-  if (!global.wss) {
+  if (!req.socket.server.wss) {
     console.log("Starting WebSocket proxy...");
 
-    global.wss = new WebSocketServer({ noServer: true });
+    const server = createServer();
+    const wss = new WebSocketServer({ noServer: true });
 
-    global.wss.on("connection", (ws) => {
+    server.on("upgrade", (request, socket, head) => {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        wss.emit("connection", ws, request);
+      });
+    });
+
+    wss.on("connection", (ws) => {
       console.log("Client connected to WebSocket proxy.");
 
       const aisStream = new WebSocket("wss://stream.aisstream.io/v0/stream");
@@ -20,7 +23,7 @@ export default function handler(req, res) {
         console.log("✅ Connected to AISStream.io");
         aisStream.send(
           JSON.stringify({
-            Apikey: "379f727dd8ee90352708c468ba7c5604bba3566d", // Replace with your actual key
+            Apikey: "379f727dd8ee90352708c468ba7c5604bba3566d", // Replace with your real API key
             BoundingBoxes: [[[-180, -90], [180, 90]]],
             FilterMessageTypes: ["PositionReport"],
           })
@@ -44,7 +47,7 @@ export default function handler(req, res) {
       });
     });
 
-    console.log("WebSocket server started.");
+    req.socket.server.wss = wss;
   }
 
   res.end();
