@@ -1,46 +1,37 @@
-import { WebSocketServer } from "ws";
+import WebSocket from "ws";
 
 export default function handler(req, res) {
-  if (!res.socket.server.wss) {
-    console.log("Starting WebSocket proxy...");
-
-    const wss = new WebSocketServer({ noServer: true });
-
-    wss.on("connection", (ws) => {
-      console.log("Client connected to WebSocket proxy.");
-
-      const aisStream = new WebSocket("wss://stream.aisstream.io/v0/stream");
-
-      aisStream.onopen = () => {
-        console.log("✅ Connected to AISStream.io");
-        aisStream.send(
-          JSON.stringify({
-            Apikey: "YOUR_AISSTREAM_API_KEY", // Replace with your actual key
-            BoundingBoxes: [[[-180, -90], [180, 90]]],
-            FilterMessageTypes: ["PositionReport"],
-          })
-        );
-      };
-
-      aisStream.onmessage = (message) => {
-        ws.send(message.data);
-      };
-
-      aisStream.onerror = (error) => {
-        console.error("❌ AISStream.io WebSocket error:", error);
-        ws.close();
-      };
-
-      aisStream.onclose = () => ws.close();
-
-      ws.on("close", () => {
-        console.log("Client disconnected from proxy.");
-        aisStream.close();
-      });
-    });
-
-    res.socket.server.wss = wss;
+  if (req.method !== "GET") {
+    res.status(405).json({ error: "Method Not Allowed" });
+    return;
   }
 
-  res.end();
+  console.log("Starting WebSocket proxy...");
+
+  const aisStream = new WebSocket("wss://stream.aisstream.io/v0/stream");
+
+  aisStream.onopen = () => {
+    console.log("✅ Connected to AISStream.io");
+    aisStream.send(
+      JSON.stringify({
+        Apikey: "379f727dd8ee90352708c468ba7c5604bba3566d", // Replace with your real API key
+        BoundingBoxes: [[[-180, -90], [180, 90]]],
+        FilterMessageTypes: ["PositionReport"],
+      })
+    );
+  };
+
+  aisStream.onmessage = (message) => {
+    res.write(message.data);
+  };
+
+  aisStream.onerror = (error) => {
+    console.error("❌ WebSocket error:", error);
+    res.status(500).json({ error: "WebSocket connection failed" });
+  };
+
+  aisStream.onclose = () => {
+    console.log("✅ WebSocket connection closed.");
+    res.end();
+  };
 }
