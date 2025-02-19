@@ -15,7 +15,7 @@ wss.on("connection", (ws) => {
     console.log("✅ Connected to AISStream.io");
     aisStream.send(
       JSON.stringify({
-        Apikey: process.env.AISSTREAM_API_KEY, // Use Railway environment variables
+        Apikey: process.env.AISSTREAM_API_KEY, // Store API key in Heroku config vars
         BoundingBoxes: [[[-180, -90], [180, 90]]],
         FilterMessageTypes: ["PositionReport"],
       })
@@ -37,6 +37,11 @@ wss.on("connection", (ws) => {
     console.log("Client disconnected from proxy.");
     aisStream.close();
   });
+});
+
+// Define a simple HTTP route
+app.get("/", (req, res) => {
+  res.send("WebSocket proxy is running!");
 });
 
 const PORT = process.env.PORT || 3000;
