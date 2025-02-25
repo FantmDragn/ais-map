@@ -3,48 +3,69 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const mapStyle = { height: "100vh", width: "100%" };
-const AIS_STREAM_URL = "wss://ais-map.vercel.app/api/ais-proxy/";
-const API_KEY = "379f727dd8ee90352708c468ba7c5604bba3566d"; // Replace with your actual key
+const AIS_STREAM_URL = "wss://ais-map.railway.internal"; // Replace with Railway WebSocket URL
+const API_KEY = ""; // Replace with your actual API key
 
 const Map = () => {
   const [ships, setShips] = useState([]);
+  let socket; // WebSocket instance
 
   useEffect(() => {
-    const socket = new WebSocket(AIS_STREAM_URL);
+    let reconnectTimeout;
 
-    socket.onopen = () => {
-      console.log("Connected to AISStream.io WebSocket");
-      // Send subscription message
-      const message = {
-        Apikey: API_KEY,
-        BoundingBoxes: [
-          [[-180, -90], [180, 90]] // Covers the whole world
-        ],
-        FilterMessageTypes: ["PositionReport"],
+    const connectWebSocket = () => {
+      console.log("Connecting to WebSocket...");
+      socket = new WebSocket(AIS_STREAM_URL);
+
+      socket.onopen = () => {
+        console.log("Connected to AISStream.io WebSocket");
+        const message = {
+          Apikey: API_KEY,
+          BoundingBoxes: [[[-180, -90], [180, 90]]], // Global coverage
+          FilterMessageTypes: ["PositionReport"],
+        };
+        socket.send(JSON.stringify(message));
+
+        // Send heartbeat every 30 seconds to keep the connection alive
+        setInterval(() => {
+          if (socket.readyState === WebSocket.OPEN) {
+            socket.send(JSON.stringify({ type: "ping" }));
+          }
+        }, 30000);
       };
-      socket.send(JSON.stringify(message));
+
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data && data.messages) {
+            const shipsData = data.messages
+              .filter(ship => ship.latitude !== undefined && ship.longitude !== undefined)
+              .slice(0, 50); // Limit to 50 ships
+            setShips(shipsData);
+          }
+        } catch (error) {
+          console.error("Error parsing WebSocket message:", error);
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket error:", error);
+      };
+
+      socket.onclose = () => {
+        console.warn("WebSocket closed. Attempting to reconnect...");
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = setTimeout(connectWebSocket, 5000); // Retry in 5 seconds
+      };
     };
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      if (data && data.messages) {
-        const shipsData = data.messages
-          .filter(ship => ship.latitude !== undefined && ship.longitude !== undefined)
-          .slice(0, 50); // Limit to 50 ships
-        setShips(shipsData);
-      }
-    };
-
-    socket.onerror = (error) => {
-      console.error("WebSocket error:", error);
-    };
-
-    socket.onclose = () => {
-      console.log("AISStream.io WebSocket closed");
-    };
+    connectWebSocket();
 
     return () => {
-      socket.close();
+      clearTimeout(reconnectTimeout);
+      if (socket) {
+        socket.close();
+      }
     };
   }, []);
 
