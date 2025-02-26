@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 
 const mapStyle = { height: "100vh", width: "100%" };
 const AIS_STREAM_URL = "wss://ais-map-production.up.railway.app"; // Replace with Railway WebSocket URL
-const API_KEY = ""; // Replace with your actual API key
+const API_KEY = "379f727dd8ee90352708c468ba7c5604bba3566d"; // Replace with your actual API key
 
 const Map = () => {
   const [ships, setShips] = useState([]);
