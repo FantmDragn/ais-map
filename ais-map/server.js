@@ -7,11 +7,17 @@ const server = http.createServer((req, res) => {
   res.end("WebSocket upgrade required");
 });
 
-// Create WebSocket server on the same port
-const wss = new WebSocket.Server({ server });
+// Create a WebSocket server that listens for upgrade requests
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on("upgrade", (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, (ws) => {
+    wss.emit("connection", ws, request);
+  });
+});
 
 wss.on("connection", (ws) => {
-  console.log("New client connected");
+  console.log("New WebSocket client connected");
 
   ws.on("message", (message) => {
     console.log(`Received: ${message}`);
@@ -24,6 +30,7 @@ wss.on("connection", (ws) => {
   ws.send("Connected to AIS WebSocket Server");
 });
 
+// Start the server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`WebSocket server running on port ${PORT}`);
