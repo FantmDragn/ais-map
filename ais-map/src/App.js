@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 
 const mapStyle = { height: "100vh", width: "100%" };
-const AIS_STREAM_URL = "wss://ais-map.railway.internal"; // Replace with Railway WebSocket URL
+const AIS_STREAM_URL = "wss://ais-map-production.up.railway.app"; // Replace with Railway WebSocket URL
 const API_KEY = ""; // Replace with your actual API key
 
 const Map = () => {
