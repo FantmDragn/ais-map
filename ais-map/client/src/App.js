@@ -11,30 +11,32 @@ const Map = () => {
   let socket; // WebSocket instance
 
   useEffect(() => {
+    let socket;
     let reconnectTimeout;
-
+  
     const connectWebSocket = () => {
-      console.log("Connecting to WebSocket...");
+      console.log("🔗 Connecting to WebSocket...");
       socket = new WebSocket(AIS_STREAM_URL);
-
+  
       socket.onopen = () => {
-        console.log("Connected to AISStream.io WebSocket");
+        console.log("✅ Connected to WebSocket");
         const message = {
           Apikey: API_KEY,
           BoundingBoxes: [[[-180, -90], [180, 90]]], // Global coverage
           FilterMessageTypes: ["PositionReport"],
         };
         socket.send(JSON.stringify(message));
-
-        // Send heartbeat every 30 seconds to keep the connection alive
+  
+        // Keep the connection alive
         setInterval(() => {
           if (socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify({ type: "ping" }));
           }
         }, 30000);
       };
-
+  
       socket.onmessage = (event) => {
+        console.log("📩 Received:", event.data);
         try {
           const data = JSON.parse(event.data);
           if (data && data.messages) {
@@ -44,30 +46,29 @@ const Map = () => {
             setShips(shipsData);
           }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
+          console.error("❌ Error parsing WebSocket message:", error);
         }
       };
-
+  
       socket.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        console.error("⚠️ WebSocket Error:", error);
       };
-
+  
       socket.onclose = () => {
-        console.warn("WebSocket closed. Attempting to reconnect...");
+        console.warn("⚠️ WebSocket closed. Reconnecting...");
         clearTimeout(reconnectTimeout);
-        reconnectTimeout = setTimeout(connectWebSocket, 5000); // Retry in 5 seconds
+        reconnectTimeout = setTimeout(connectWebSocket, 5000); // Reconnect after 5s
       };
     };
-
+  
     connectWebSocket();
-
+  
     return () => {
       clearTimeout(reconnectTimeout);
-      if (socket) {
-        socket.close();
-      }
+      if (socket) socket.close();
     };
   }, []);
+  
 
   return (
     <MapContainer center={[0, 0]} zoom={2} style={mapStyle}>
