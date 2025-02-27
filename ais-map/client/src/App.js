@@ -36,18 +36,25 @@ const Map = () => {
       };
   
       socket.onmessage = (event) => {
+        console.log("📩 Received WebSocket Message:", event.data); // Log all messages
+      
         try {
           const data = JSON.parse(event.data); // ✅ Try parsing as JSON
+          console.log("📊 Parsed Data:", data); // Log parsed JSON
+      
           if (data && data.messages) {
             const shipsData = data.messages
               .filter(ship => ship.latitude !== undefined && ship.longitude !== undefined)
               .slice(0, 50); // Limit to 50 ships
+      
+            console.log("🚢 Processed Ship Data:", shipsData); // Log ship data
             setShips(shipsData);
           }
         } catch (error) {
           console.warn("⚠️ Received non-JSON message:", event.data); // Log non-JSON messages
         }
       };
+      
       
   
       socket.onerror = (error) => {
