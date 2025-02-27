@@ -29,7 +29,8 @@ wss.on("connection", (ws) => {
     console.log("❌ Client disconnected");
   });
 
-  ws.send("Connected to AIS WebSocket Server ✅");
+  ws.send(JSON.stringify({ message: "Connected to WebSocket Server ✅" })); // ✅ Now JSON
+
 });
 
 // Start the server
