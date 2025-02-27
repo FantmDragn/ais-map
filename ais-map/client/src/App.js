@@ -36,9 +36,8 @@ const Map = () => {
       };
   
       socket.onmessage = (event) => {
-        console.log("📩 Received:", event.data);
         try {
-          const data = JSON.parse(event.data);
+          const data = JSON.parse(event.data); // ✅ Try parsing as JSON
           if (data && data.messages) {
             const shipsData = data.messages
               .filter(ship => ship.latitude !== undefined && ship.longitude !== undefined)
@@ -46,9 +45,10 @@ const Map = () => {
             setShips(shipsData);
           }
         } catch (error) {
-          console.error("❌ Error parsing WebSocket message:", error);
+          console.warn("⚠️ Received non-JSON message:", event.data); // Log non-JSON messages
         }
       };
+      
   
       socket.onerror = (error) => {
         console.error("⚠️ WebSocket Error:", error);
