@@ -11,10 +11,12 @@ const server = http.createServer((req, res) => {
 const wss = new WebSocket.Server({ noServer: true });
 
 server.on("upgrade", (request, socket, head) => {
+  console.log("🔄 Upgrade request received"); // Log upgrade attempts
   wss.handleUpgrade(request, socket, head, (ws) => {
     wss.emit("connection", ws, request);
   });
 });
+
 
 wss.on("connection", (ws) => {
   console.log("✅ New WebSocket client connected");
